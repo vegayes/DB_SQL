@@ -263,6 +263,127 @@ FROM EMPLOYEE ;
 -- 9 : 숫자 한 칸을 의미, 여러개 작성 시 오른쪽 정렬
 -- 0 : 숫자 한 칸을 의미, 여러개 작성 시 오른쪽 정렬 + 빈칸에 0추가! 
 -- L : 현재 DB에 설정된 나라의 화폐 기호 
+SELECT TO_CHAR(1234, '99999') FROM DUAL; -- ' 1234' 
+SELECT TO_CHAR(1234, '00000') FROM DUAL; -- '01234'
+SELECT TO_CHAR(1234) FROM DUAL; -- '1234' 
+SELECT TO_CHAR(1000000, 'L9,999,999') FROM DUAL; -- ￦1,000,000
+
+-- 1-2)<날짜 변환 시 포맷 패턴>
+-- YYYY : 2023 / YY :23
+-- MM : 08
+-- DD : 31
+-- AM 또는 PM : 오전 / 오후
+-- HH : 시간 /HH24 : "15"시 24시간 표기법
+-- MI : 분 / SS : 초
+-- DAY : 요일(전체) / DY : 요일 (요일명만 표시)
+
+--2023/08/08 20:20:41 화요일
+SELECT TO_CHAR(SYSDATE, 'YYYY/MM/DD HH24:MI:SS DAY')
+FROM DUAL;
+
+--2023년 08월 04일 (금)
+SELECT TO_CHAR(SYSDATE, 'YYYY"년" MM"월" DD"일" (DY)' ) 
+FROM DUAL;
+-- 문자 넣으려면 "" 넣기
+
+
+
+-- 2) 날짜로 변환 TO_DATE
+-- 	  TO_DATE(문자형 데이터, [포맷]) : 문자형 데이터를 날짜로 변경
+-- 	  TO_DATE(숫자형 데이터, [포맷]) : 숫자형 데이터를 날짜로 변경
+
+-- 리터럴 형식 문자형을 맞춰야 함!
+-- Y 패턴 : 현재 세기(21세기 == 20XX년 == 2000년대)
+-- R 패턴 : 지난 세기(20세기 == 19XX년 == 1900년대)
+--         >> 1세기 기준으로 절반(50년) 이상인 경우는 이전세기(1900년대)
+--         >> 절반(50년) 미만인 경우 현재 세기(2000년대)
+
+
+SELECT TO_CHAR(TO_DATE(SUBSTR(EMP_NO, 1, INSTR(EMP_NO,'-')-1),'RRMMDD'), 'YYYY"년"MM"월"DD"일"DAY')
+FROM EMPLOYEE;
+
+
+
+
+-- 3) 숫자 형변환
+--  TO_NUMBER(문자데이터, [포맷]) :: 문자데이터 숫자 데이터로 변경
+SELECT TO_NUMBER('1,000,000','9,999,999') +500000 FROM DUAl; --1,500,000 연산가능!!!!!!!!!!!!!!!!!!
+
+
+
+
+-- 4)  NULL  처리 함수 
+-- NVL(컬럼명, 컬럼값이 NULL인 경우 바꿀 값) : NULL인 컬럼값을 다른값으로 변경 O
+-- NULL과 산술 연산을 진행 시, 결과는 무조건 NULL임.
+
+SELECT EMP_NAME, SALARY, NVL(BONUS, 0), SALARY * NVL(BONUS,0)
+FROM EMPLOYEE ;
+
+-- 4-2) NVL2(컬럼명, 바꿀값1, 바꿀값2) : 해당 컬럼의 값이 있으면 바꿀값1로 변경, NULL이면 바꿀값 2로 변경
+
+-- EMPLOYEE 테이블에서 보너스를 받으면 'O', 안받으면 'X'조회
+SELECT EMP_NO , NVL2(BONUS,'O','X') "보너스 수령"
+FROM EMPLOYEE;
+
+
+
+-- 5) 선택 함수
+--   여러가지 경우에 따라 알맞은 결과를 선택할 수 있음.
+
+-- 5-1) DECODE(계산식 | 컬럼명, 조건값 1, 선택값 1, 조건값 2, 선택값 2,..., 일치값 X)
+-- 비교하고자 하는 값 또는 컬럼이 조건식과 같으면 결과값 반환
+-- 일치하는 값을 확인 (자봐의 SWITCH와 비슷함) 
+
+SELECT EMP_NAME , DECODE(SUBSTR( EMP_NO, 8,1), '1',' 남성','2','여성') 성별
+FROM EMPLOYEE ;
+
+
+/* 5-2) CASE WHEN 조건식 THEN 결과값
+		     WHEN 조건식 THEN 결과값
+		     ELSE 결과값
+		END
+*/
+-- 비교하고자 하는 값 또는 컬럼이 조건식과 같으면 결과 값 반환
+-- 조건은 범위 값 가능 
+
+--ex) EMPLOYEE 테이블에서
+--    급여가 500만원 이상이면 "대"
+--     급여가 300만원 이상 500만 미만이면 "중"
+--     급여가 300만 미만 "소"으로 조회
+SELECT EMP_NAME , SALARY , 
+	CASE 
+		WHEN SALARY >= 5000000 THEN '대' -- if
+		WHEN SALARY >= 3000000 THEN '중' -- else
+		ELSE '소'
+	END "급여 받는 정도"
+FROM EMPLOYEE ;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
