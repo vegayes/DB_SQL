@@ -360,22 +360,64 @@ FROM EMPLOYEE ;
 
 
 
+------------------------------------------------------------------------------
+----------------------------- 그룹 함수  -----------------------------
+-- 하나 이사으이 행을 그룹으로 묶어 연산하고 총합, 평균 등의 하나의 결과 행으로 반환하는 함수
+
+-- 1) SUM(숫자가 기록된 컬럼명) : 합계 
+
+-- 2) AVG(숫자가 기록된 컬럼명) : 평균
+
+-- 3) MIN(컬럼명) : 최솟값
+
+-- 4) MAX(컬럼명) : 최대값
+--> 타입 제한 없음(숫자: 대/소, 날짜: 과거/미래, 문자열: 문자 순서 ) 
+
+-- 5) COUNT(* | 컬럼명) : 행 개수를 헤아려서 리턴
+
+-- 5-2) COUNT([DISTINCT] 컬럼명) : 중복을 제거한 행 개수를 헤아려서 리턴
+
+-- 5-3) COUNT(*) : NULL을 포함한 전체 행 개수를 리턴
+
+-- 5-4)  COUNT(컬럼명) : NULL을 제외한 실제 값이 기록된 행의 개수를 리턴
+
+-- ex) 부서코드가 'D9'인 사원들의 급여 합, 평균 조회
+SELECT SUM(SALARY), AVG(SALARY)
+FROM EMPLOYEE 
+WHERE DEPT_CODE = 'D9';
+
+-- ex) 급여 최소값, 가장 빠른 입사일, 알파벳 순서가 가장빠른 이메일
+SELECT MIN(SALARY), MIN(HIRE_DATE), MIN(EMAIL)
+FROM EMPLOYEE 
+
+-- ex) EMPLOYEE 테이블에서 급여를 가장 많이 받는 사원의
+-- 이름, 급여, 직급 코드 조회
+SELECT EMP_NAME , SALARY , DEPT_CODE 
+FROM EMPLOYEE
+WHERE SALARY = (SELECT MAX(SALARY) FROM EMPLOYEE); -- 서브쿼리 사용
+
+--ex) EMPLOYEE 테이블의 행의 개수
+SELECT COUNT(*) FROM EMPLOYEE ;
+
+--ex) BONUS를 받는 사원의 수 (2가지 방법) 
+--1) 
+SELECT COUNT(BONUS) FROM EMPLOYEE 
+WHERE BONUS IS NOT NULL;
+
+--2) 
+SELECT COUNt(BONUS) FROM EMPLOYEE;
 
 
+-- ex) DISTINCT 이용
+SELECT DISTINCT DEPT_CODE FROM EMPLOYEE ;  -- NULL값 가져옴 
 
+SELECT COUNT(DISTINCT DEPT_CODE) FROM EMPLOYEE  ; -- NULL값 제거함.
+--> COUNT(컬럼명)에 의해서 NULL을 제외한 실제 값이 있는 행의 개수만 조회 
 
-
-
-
-
-
-
-
-
-
-
-
-
+-- EMPLOYEE 테이블에서 성별이 남성인 사원의 수 조회
+SELECT COUNT(*)  -- ******* 순서 중요!
+FROM EMPLOYEE 
+WHERE SUBSTR(EMP_NO,8,1) = 1;
 
 
 
