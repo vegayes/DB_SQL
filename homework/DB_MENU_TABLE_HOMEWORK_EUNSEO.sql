@@ -22,13 +22,30 @@
 -- 2) DML
 /*
  *   1) INSERT INTO 테이블명 (컬럼명) VALUSE(데이터 값, 데이터 값)  
+ *   +) INSERT시,   VALUES 대신 서브쿼리 사용 가능!
  * 
+ *   2) UPDATE 테이블명 SET 컬럼명 = 바꿀값
+ * 				[WHERE 컬럼명 비교 연산자 비교값];
+ * 	 +) 조건절을 설정하지 않은 경우, 모든 행의 컬럼값이 변경됨.
+ *   +) 여러 컬럼을 한번에 수정 시, 콤마(,)로 컬럼을 구분하면 됨.
+ *   +) UPDATE시,   서브쿼리 사용 가능!
  * 
- * 
+ *   3) MERGE (병합)
+ *  
+ *   3) DELETE FROM 테이블명 WHERE 조건설정
+ *   +) 조건절을 설정하지 않은 경우, 모든 행의 컬럼값이 변경됨.
  * 
  * +) TCL 
+ * 	:: 변경 가능한 것. : INSERT, UPDATE, DELETE, MERGE
  * 	 - ROLLBACK
  *   - COMMIT
+ * 	 - SAVEPOINT
+ * 
+ *     SAVEPOINT 포인트명1;
+    		...
+       SAVEPOINT 포인트명2;
+    		...
+       ROLLBACK TO 포인트명1; -- 포인트1 지점 까지 데이터 변경사항 삭제
  * 
  */
 
@@ -36,26 +53,78 @@
 
 -- 3) DDL
 /* 
+ *   1)CREATE TABLE 테이블명 (
+ * 			컬럼명 자료형(크기),
+ * 			컬럼명 자료형(크기),
+ * 			컬럼명 자료형(크기)
+ * 			...
+ *  	);
+ * 
+ * 	 2)COMMENT ON COLUMN 테이블명.컬럼명 IS '주석내용';
  * 
  * 
- * 
- * 
+ *  +) TRUNCATE TABLE 테이블명; 
+ * 		:: 테이블 전체 행 삭제할 수 있음.
+ *      :: DELETE 보다 수행속도 fast , rollback 불가
  * 
  *  <제약조건>
+ *  1) 컬럼 레벨 : [CONSTRAINT 제약조건명] 제약조건 
+ *  2) 테이블 레벨 : [CONSTRAINT 제약조건명] 제약조건 (컬럼명)
+ *  * 복합키 지정은 테이블 레벨만 가능함!
+ *  * 복합키 지정되는 모든 컬럼의 값이 같을 때 위배됨. (== > 둘다 똑같으면 위배됨.)
+ * 
  *  1. PRIMARY KEY
  *  2. NOT NULL
  *  3. UNIQUE
  *  4. CHECK
  *  5. FOREIGN KEY
+ * -> 컬럼 레벨일 경우
+ *    컬럼명 자료형(크기) [CONSTRAINT 이름] REFRENCES 참조할테이블명 [(참조할 컬럼)] [삭제룰]
+ * -> 테이블 레벨일 경우
+ *    [CONSTRAINT 이름] FOREIGN KEY(적용할 컬럼명) REFERENCES 참조할테이블명 [(참조할 컬럼)] [삭제룰]
+ *
+ *
+ * * 참조될 수 있는 컬럼은 PRIMARY KEY 컬럼과, UNIQUE 지정된 컬럼만 외래키로 사용할 수 있음.
+ *   참조할 테이블의 참조할 컬럼명이 생략되면, PRIMARY KEY로 설정된 컬럼이 자동 참조할 컬럼이 됨.
+ *  
+ * *  FOREIGN KEY 삭제 옵션
+ * 1) ON DELETE RESTRICTED -->>>  자식이 사용하고 있는 값은 부모가 지울 수 없음
+ * 2) ON DELETE SET NULL : 부모키 삭제시 자식키를 NULL로 변경하는 옵션
+ * 3) ON DELETE CASCADE : 부모키 삭제 시 자식키도 함께 삭제됨
+ * 
+ *   4) CHECK(컬럼명 비교연산자 비교값)
  * 
  * 
+ *   5) ALTER TABLE 테이블명 ADD [CONSTRAINT 제약조건명] 제약조건 (컬럼명)
+ *                            [REFERENCES 테이블명 
+ * 
+ *      ALTER TABLE 테이블명 DROP CONSTRAINT 제약조건명;
+ * 
+ *   <컬럼 추가>
+ *      ALTER TABLE 테이블명 ADD(컬럼명 데이터 타입 [DEFAULT '값']); 
+ * 
+ *   <컬럼 수정>
+ *      ALTER TABLE 테이블명 MODIFY 컬럼명 데이터타입; --> 데이터 타입 변경
+ *      ALTER TABLE 테이블명 MODIFY 컬럼명 DEFAULT '값'; --> DEFAULT 값 변경
+ *      ALTER TABLE 테이블명 MODIFY 컬럼명 NULL/ NOT NULL; --> NULL 여부 변경 
+ * 
+ *   <컬럼 삭제>
+ *      ALTER TABLE 테이블명 DROP(삭제할 컬럼명);
+ *      ALTER TABLE 테이블명 DROP COLUMN 삭제할컬럼명;
  * 
  * 
+ *   3. 이름변경 (컬럼, 제약조건, 테이블) 
+ *    1) 컬럼명 변경 (DEPT_TITLE -> DEPT_NAME)
+ *      ALTER TABLE DEPT_COPY RENAME COLUMN DEPT_TITLE TO DEPT_NAME;
+ * 
+ *    2) 제약조건명 변경 (D_COPY_PK -> DEPT_COPY_PK)
+ *      ALTER TABLE DEPT_COPY RENAME CONSTRAINT D_COPY_PK TO DEPT_COPY_PK;\
+ *
+ *    3) 테이블명 변경(DEPT_COPY -> DCOPY)
+ *      ALTER TABLE DEPT_COPY RENAME TO DCOPY;
  * 
  * 
- * 
- * 
- * 
+ *  6) DROP TABLE 테이블명 [CASCADE CONSTRAINTS];
  */
 
 
