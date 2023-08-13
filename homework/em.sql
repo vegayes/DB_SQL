@@ -128,6 +128,53 @@
  */
 
 
+/*
+ *  1) VIEW
+ *  CREATE [OR REPLACE] [FORCE | NOFORCE] VIEW 뷰이름 [(alias[,alias]...)]
+ * AS subquery
+ * [WITH CHECK OPTION]
+ * [WITH READ ONLY];
+ * 
+ *     1) 'OR REPLACE 옵션' : 기존에 동일한 뷰 이름이 존재하는 경우 덮어쓰고, 존재하지 않으면 새로 생성
+ *     2) FORCE / NOFORCE 옵션 - FORCE : 서브쿼리에 사용된 테이블이 존재하지 않아도 뷰 생성 --> 뷰를 테이블보다 미리 만들때? 
+ * 							  - NOFORCE : 서브쿼리에 사용된 테이블이 존재해야만 뷰 생성(기본값)
+ * 	   3) WITH CHECK OPTION 옵션 : 옵션을 설정한 컬럼의 값을 수정 불가능하게 함.
+ *     4) 'WITH READ ONLY 옵션' : 뷰에 대해 조회만 가능(DML 수행 불가)  --> SELECT만 가능 
+ * 
+ *  +) GRANT CREATE VIEW 해야함!
+ * 
+ * 
+ * 	 2) SEQUENCE
+ * 		CREATE SEQUENCE 시퀀스이름
+ *      [START WITH 숫자] -- 처음 발생시킬 시작값 지정, 생략하면 자동 1이 기본
+ *      [INCREMENT BY 숫자] -- 다음 값에 대한 증가치, 생략하면 자동 1이 기본
+ *      [MAXVALUE 숫자 | NOMAXVALUE] -- 발생시킬 최대값 지정 (10의 27승 -1)
+ *      [MINVALUE 숫자 | NOMINVALUE] -- 최소값 지정 (-10의 26승) ---> 다시 시작
+ *      [CYCLE | NOCYCLE] -- 값 순환 여부 지정
+ *      [CACHE 바이트크기 | NOCACHE] -- 캐쉬메모리 기본값은 20바이트, 최소값은 2바이트
+ * 
+ *     ** 시퀀스 사용 방법 **
+    
+    1) 시퀀스명.NEXTVAL : 다음 시퀀스 번호를 얻어옴. (INCREMENT BY만큼 증가된 값)
+                          단, 시퀀스 생성 후 첫 호출인 경우 START WITH의 값을 얻어옴.
+    
+    2) 시퀀스명.CURRVAL : 현재 시퀀스 번호 얻어옴.
+                          단, 시퀀스 생성 후 NEXTVAL 호출 없이 CURRVAL를 호출하면 오류 발생.
+ * 
+ * 		수정)
+ * 		  ALTER SEQUENCE 시퀀스이름
+ *        [INCREMENT BY 숫자] -- 다음 값에 대한 증가치, 생략하면 자동 1이 기본
+ *        [MAXVALUE 숫자 | NOMAXVALUE] -- 발생시킬 최대값 지정 (10의 27승 -1)
+ *        [MINVALUE 숫자 | NOMINVALUE] -- 최소값 지정 (-10의 26승)
+ *        [CYCLE | NOCYCLE] -- 값 순환 여부 지정
+ *        [CACHE 바이트크기 | NOCACHE] -- 캐쉬메모리 기본값은 20바이트, 최소값은 2바이트
+ * 
+ * 
+ *   3) INDEX
+ *     CREATE [UNIQUE] INDEX 인덱스명 ON 테이블명 (컬럼명, 컬럼명, ... | 함수명, 함수계산식);
+ */
+
+
 -- * 쇼핑몰 재고 (및 회원)관리 *
 -- < 1. 테이블 설계 >
 
@@ -142,18 +189,18 @@
 -->    PK                           UNIQUE
 
   
--- 3) 재고 테이블
+-- 3) 재고 테이블 --1JOIN 
 -- 상품 코드(PR_ID), 카테고리(CATEGORY),  상품명(PR_NAME) , 재고 수량(INVENTORY),
 -->    PK                 FK                   UNIQUE           
--->                                                               DEFAULT           
--- 판매 상태(PR_STATUS), 거래처(ACCOUNT), 단가(PRICE), 금액(TOTAL) 
--->                          UNIQUE         NOT NULL     NOT NULL
--->                                           DEFAULT    DEFAULT         
+-->                                                        DEFAULT           
+-- 판매 상태(PR_STATUS), 거래처(ACCOUNT), 단가(PRICE)
+-->                          UNIQUE    NOT NULL     
+-->                                    DEFAULT            
 
 
--- 4) 재고 총 금액 파악
--- 
-
+-- 4) 재고 총 금액 파악 --2JOIN / 카테고리별 금액 계산 시,
+-- 상품 코드(PR_ID) , 카테고리(CATEGORY), 상품명(PR_NAME), 금액(TOTAL) 
+-->  PK                 FK               UNIQUE       NOT NULL (DEFAULT)
 
 --XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX
 -- 4) 회원 테이블
@@ -203,25 +250,28 @@
 DROP TABLE PRODUCT;
 DROP TABLE CATEGORY;
 DROP TABLE INVENTORY;
+DROP TABLE TOTAL_AMOUNT;
 
 SELECT * FROM PRODUCT;
 SELECT * FROM CATEGORY;
 SELECT * FROM INVENTORY;
+SELECT * FROM TOTAL_AMOUNT;
+
 
 
 --------------------------------------------------------------------------------------------------------------------------
 --                                           테이블 설계
 --------------------------------------------------------------------------------------------------------------------------
 
--- 1) 상품(PRODUCT) 테이블 
+-- 1) 상품(PRODUCT) 테이블  (마지막에 CREATE 하기!)
 -- 상품 코드(PR_ID), 카테고리(CATEGORY), 상품명(PR_NAME), 상품 가격(PR_PRICE), 판매 상태(PR_STATUS)
 
 CREATE TABLE PRODUCT( 
-		PR_ID VARCHAR2(20) CONSTRAINT PR_ID_PK PRIMARY KEY,
+		PR_ID VARCHAR2(20) CONSTRAINT PR_ID_FK REFERENCES INVENTORY ON DELETE CASCADE, -- 재고 테이블에서 없애는경우 같이 없어짐.
 		CATEGORY VARCHAR2(30),
 		PR_NAME VARCHAR2(30),
 		PR_PRICE NUMBER,
-		PR_STATUS VARCHAR2(30) CONSTRAINT PR_STATUS_NN NOT NULL
+		PR_STATUS VARCHAR2(30) DEFAULT '판매 보류' CONSTRAINT PR_STATUS_NN NOT NULL
 );
 
 
@@ -233,22 +283,31 @@ CREATE TABLE CATEGORY(
 );
 
 -- 3) 재고(INVENTORY) 테이블 -- 외래키 존재
--- 상품 코드(PR_ID), 카테고리(CATEGORY),  상품명(PR_NAME) , 재고 수량(INVENTORY), 
--- 판매 상태(PR_STATUS), 거래처(ACCOUNT), 단가(PRICE), 재고 단가 금액(TOTAL) 
+-- 상품 코드(PR_ID), 카테고리(CATEGORY),  상품명(PR_NAME) , 재고 수량(INVENTORY), 거래처(ACCOUNT), 단가(PRICE)
 CREATE TABLE INVENTORY( 
 	PR_ID VARCHAR2(20) CONSTRAINT IT_ID_PK PRIMARY KEY,
 	CATEGORY VARCHAR2(50),
-	PR_NAME VARCHAR2(10) CONSTRAINT PR_NAME_UQ UNIQUE,
-	INVENTORY NUMBER DEFAULT 0,
-	PR_STATUS VARCHAR2(20) DEFAULT '판매 보류',
+	PR_NAME VARCHAR2(30) CONSTRAINT PR_NAME_UQ UNIQUE ,
+	INVENTORY NUMBER  DEFAULT 0,
 	ACCOUNT VARCHAR2(20),
-	PRICE NUMBER CONSTRAINT IT_PR_NN NOT NULL,
-	TOTAL NUMBER CONSTRAINT IT_TT_NN NOT NULL
+	PRICE NUMBER CONSTRAINT IT_PR_NN NOT NULL
 );
 
--- 4) 재고 상황 테이블 -- JOIN 
--- 상품 코드(PR_ID) 
+-- 4) 재고 금액 
+-- 상품 코드(PR_ID) , 카테고리(CATEGORY), 상품명(PR_NAME), 금액(TOTAL) 
+-->  PK                 FK               UNIQUE       NOT NULL 
+CREATE TABLE TOTAL_AMOUNT (
+	PR_ID VARCHAR2(20),
+	CATEGORY VARCHAR2(50),
+	PR_NAME VARCHAR2(30),
+	TOTAL NUMBER  DEFAULT 0    
+);
 
+
+
+
+-- COMMENT 
+-- 별칭은??
 
 
 --------------------------------------------------------------------------------------------------------
@@ -267,40 +326,99 @@ SELECT * FROM CATEGORY; --------------------------------------------------------
 
 
 -- 3) 재고 상품 값 추가 
--- 상품 코드(PR_ID), 카테고리(CATEGORY),  상품명(PR_NAME) , 재고 수량(INVENTORY), 
--- 판매 상태(PR_STATUS), 거래처(ACCOUNT), 단가(PRICE), 재고 총 금액(TOTAL) 
-INSERT INTO INVENTORY VALUES('1','상의','반팔', 1, '판매 가능', 'KH', 25000);
-INSERT INTO INVENTORY VALUES('12','상의','긴팔', 3, '판매 가능', 'KH', 10000, 30000);
-
-INSERT INTO INVENTORY VALUES('11','상의','반팔', 2, '판매 가능', 'KH', 25000,
+/*
+INSERT INTO INVENTORY VALUES('11','상의','반팔', 2, 'KH', 25000,
 									(SELECT INVENTORY * PRICE FROM INVENTORY )); -- > 이렇게 하려면, 테이블 또 만들어서 가져와야 할 듯.
-
-
-INSERT INTO INVENTORY VALUES('2','하의','청바지', 2, '판매 가능', 'KH', 25000 );
-INSERT INTO INVENTORY VALUES('3','상의','긴팔', 3, '판매 가능', 'KH', 55000 );
-INSERT INTO INVENTORY VALUES('4','하의','카고 바지', 1, '판매 가능', 'KH', 45000 );
-INSERT INTO INVENTORY VALUES('5','원피스','체크', 2, NULL , 'KH', 35000 );
-INSERT INTO INVENTORY VALUES('6','원피스','땡땡이',NULL ,NULL , 'KH', 35000 );
-
-
-SELECT * FROM INVENTORY; -------------------------------------------------------------------------> 나중에 지울거
-
+*/
+INSERT INTO INVENTORY VALUES('1','상의','반팔', 1, 'KH', 25000);
+INSERT INTO INVENTORY VALUES('2','하의','청바지', 2, 'KH', 25000 );
+INSERT INTO INVENTORY VALUES('3','상의','긴팔', 3, 'KH', 55000 );
+INSERT INTO INVENTORY VALUES('4','하의','카고 바지', 1, 'KH', 45000 );
+INSERT INTO INVENTORY VALUES('5','원피스','체크', 2 , 'KH', 35000 );
+INSERT INTO INVENTORY VALUES('6','원피스','땡땡이',DEFAULT , 'KH', 35000 );
+INSERT INTO INVENTORY VALUES('7','ACC','하트',NULL , 'KH', 35000 );
 
 
 
+-- 4) 재고 금액 
+/*
+-- 단, 첫 번째 값이 있어야 하나.. ?
+INSERT INTO TOTAL_AMOUNT VALUES('1','상의','반팔',  25000);
+*/
+INSERT INTO TOTAL_AMOUNT( PR_ID, CATEGORY, PR_NAME, TOTAL)
+SELECT PR_ID, CATEGORY, PR_NAME, NVL((INVENTORY * PRICE), 0)
+FROM INVENTORY 
+WHERE NOT EXISTS ( 
+  	SELECT PR_ID 	
+  	FROM TOTAL_AMOUNT 
+  	WHERE PR_ID = PR_ID
+);
+
+/*
+SELECT PR_ID, CATEGORY, PR_NAME, (INVENTORY * PRICE)
+FROM INVENTORY  ;
+
+SELECT * FROM INVENTORY;
+SELECT * FROM TOTAL_AMOUNT;
+*/
+
+
+CREATE TABLE TEST( 
+	STATUS VARCHAR2(30), 
+	COUNT_NUM NUMBER
+);
+
+INSERT INTO TEST VALUES('판매중지',30);
+INSERT INTO TEST(COUNT_NUM) VALUES(30);
+INSERT INTO TEST(COUNT_NUM) VALUES(0);
+INSERT INTO TEST(COUNT_NUM) VALUES(4);
+INSERT INTO TEST(COUNT_NUM) VALUES(5);
+INSERT INTO TEST(COUNT_NUM) VALUES(NULL);
+
+SELECT 
+CASE 
+	WHEN COUNT_NUM <= 0 THEN '판매불가'
+	WHEN COUNT_NUM < 5 THEN '판매가능 (재고요청)'
+	WHEN COUNT_NUM >=5 THEN '판매가능'
+	ELSE '파악불가'
+END
+FROM TESTE;
 
 
 
+	
+--------------------------------------------------------------------------------------------------------
+--                                       상품 확인 및 재고 상태 확인 
+--------------------------------------------------------------------------------------------------------
 
+--1) 상품 상태 확인
+SELECT PR_ID ,CATEGORY , PR_NAME ,PR_PRICE
+	CASE
+		WHEN COUNT_NUM <= 0 THEN '판매불가'
+		WHEN COUNT_NUM < 5 THEN '판매가능 (재고요청)'
+		WHEN COUNT_NUM >=5 THEN '판매가능'
+		ELSE '파악불가'
+	END "PR_STATUS"
+	
+		PR_STATUS VARCHAR2(30) DEFAULT '판매 보류' CONSTRAINT PR_STATUS_NN NOT NULL 
+FROM PRODUCT
+JOIN 
 
+/*
+ * 
+ * 
+INSERT INTO PRODUCT_STATUS ( PR_ID, PR_NAME, PR_STATUS)
+SELECT PR_ID, PR_NAME 
+	CASE 
+		WHEN INVENTORY <= 0 THEN '판매 중지 (재고없음)'
+		WHEN INVENTORY < 10 THEN '재고 '
+	END
+FROM INVENTORY
+ * 
+ * 
+ */
 
-
-
-
-
-
-
-
+--2) 상품 
 
 
 
