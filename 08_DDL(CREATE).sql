@@ -18,7 +18,7 @@ SELECT * FROM USER_TABLES;
 
 -- DQL(Data Query Language) : 데이터 질의(조회) 언어 ==> SELECT 
 -- DML(Data Manipulation Language) : 데이터 조작 언어 
--- 테이블에 데이터 삽입, 수정, 삭제 ==> INSER, UPDATE, DELETE
+-- 테이블에 데이터 삽입, 수정, 삭제 ==> INSERT, UPDATE, DELETE
 
 -- TCL(Transaction Control Language) : 트랜잭션 제어 언어 
 -- DML 수행 내용을 Commit, Rollback 하는 언어 

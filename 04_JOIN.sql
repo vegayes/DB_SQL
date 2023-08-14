@@ -317,7 +317,6 @@ WHERE SUBSTR(EMP_NO,8,1) = 2
 AND SUBSTR(EMP_NO,1,2) BETWEEN 70 AND 79 -- EMP_NO LIKE '7%'
 AND EMP_NAME LIKE '전%'; 
 
-
 -- 2. 이름에 '형'자가 들어가는 직원들의 사번, 사원명, 직급명, 부서명을 조회하시오.
 SELECT EMP_ID 사번, EMP_NAME 사원명, JOB_NAME 직급명, DEPT_TITLE 부서명
 FROM EMPLOYEE 

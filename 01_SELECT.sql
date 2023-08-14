@@ -348,8 +348,3 @@ ORDER BY DEPT_CODE , SALARY DESC;
 
 
 
-
-
-
-
-

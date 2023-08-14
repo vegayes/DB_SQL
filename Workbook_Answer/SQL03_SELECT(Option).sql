@@ -339,3 +339,25 @@ AND CATEGORY = (SELECT CATEGORY
 AND CLASS_TYPE LIKE '전공%'
 GROUP BY DEPARTMENT_NAME
 ORDER BY 1;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
