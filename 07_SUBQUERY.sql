@@ -172,7 +172,6 @@ LEFT JOIN DEPARTMENT ON(DEPT_CODE = DEPT_ID)
 WHERE SALARY IN(SELECT MAX(SALARY) 
 				FROM EMPLOYEE	
 				GROUP BY DEPT_CODE ); -- 서브 쿼리가 여러개의 값이므로 IN 이용!
-
 				
 SELECT SALARY IN(SELECT MAX(SALARY) FROM EMPLOYEE GROUP BY DEPT_CODE )
 FROM EMPLOYEE 
@@ -422,7 +421,7 @@ WHERE (DEPT_CODE , JOB_CODE) = (SELECT DEPT_CODE , JOB_CODE
 								WHERE ENT_YN = 'Y'
 								AND SUBSTR(EMP_NO , 8, 1) = '2');
 
-
+							
 -------------------------- 연습문제 -------------------------------
 -- 1. 노옹철 사원과 같은 부서, 같은 직급인 사원을 조회하시오. (단, 노옹철 사원은 제외)
 --    사번, 이름, 부서코드, 직급코드, 부서명, 직급명
